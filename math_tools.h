@@ -143,17 +143,10 @@ void inverseMatrix(Matrix M, Matrix &Minv){
     cout << "Iniciando calculo de inversa...\n";
     Matrix Cof, Adj;
     cout << "Calculo de determinante...\n";
-    /*
-    float det = determinant(M);
-    if(det == 0){
-        cout << "\n!---CATASTROPHIC FAILURE---!\n";
-        exit(EXIT_FAILURE);
-    }*/
     cout << "Iniciando calculo de cofactores...\n";
     cofactors(M,Cof);
     cout << "Calculo de adjunta...\n";
     transpose(Cof,Adj);
     cout << "Calculo de inversa...\n";
-    //productRealMatrix(1/det,Adj,Minv);
     productRealMatrix(1,Adj,Minv);
 }

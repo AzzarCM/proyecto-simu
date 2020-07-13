@@ -320,17 +320,17 @@ float calculateLocalJ(int i,mesh m){
 }
 
 Matrix createLocalM(int e,mesh &m){
-    Matrix matrixA,matrixK,matrixG,matrixD, matrixTau, matrixPI, matrixTrara;
+    Matrix matrixT,matrixP,matrixL,matrixR,matrixTau,matrixPI,matrixTrara;
     float u_bar,nu,rho,Ve,J,Determinant;
 
-    /* [ A+K  G ]
-       [  D   0 ]
+    /* [ T+P  L ]
+       [  R   0 ]
     */
 
-    //Matrix A
-    Matrix g_matrix, Alpha, Beta;
+    //Matrix T
+    Matrix Alpha, Beta;
 
-    u_bar = m.getParameter(ADJECTIVE_VELOCITY);
+    
     Determinant = calculateLocalD(e,m);
     J = calculateLocalJ(e,m);
 
@@ -342,51 +342,46 @@ Matrix createLocalM(int e,mesh &m){
     float real_a = (float) (J)/(360*Determinant);
     
     calculateTau(matrixTau,m,e);
-    calculateGamma(g_matrix);
     calculateAlpha(e,Alpha,m);
     calculateBeta(Beta);
-    productRealMatrix(real_a, productMatrixMatrix(matrixTau,productMatrixMatrix(Alpha,Beta,3,3,12),12,3,12),matrixA);
+    productRealMatrix(real_a, productMatrixMatrix(matrixTau,productMatrixMatrix(Alpha,Beta,3,3,12),12,3,12),matrixT);
 
 
-    //Matrix K
+    //Matrix P
     Matrix Alpha_t,Beta_t;
-    float pe = calculatePe(m,e);
-    nu = m.getParameter(DYNAMIC_VISCOSITY);
-    Ve = calculateLocalVolume(e,m);
-    
+    float pe = calculatePe(m,e);    
     float real_k = (float) (pe)/24*(Determinant*Determinant);
 
     transpose(Alpha,Alpha_t);
     transpose(Beta,Beta_t);
 
-    productRealMatrix(real_k,productMatrixMatrix(Beta_t,productMatrixMatrix(Alpha_t,productMatrixMatrix(Alpha,Beta,3,3,12),3,3,12),12,3,12),matrixK);
+    productRealMatrix(real_k,productMatrixMatrix(Beta_t,productMatrixMatrix(Alpha_t,productMatrixMatrix(Alpha,Beta,3,3,12),3,3,12),12,3,12),matrixP);
 
     
-    //Matrix G
+    //Matrix L
     Matrix Omega;
     
-    rho = m.getParameter(DENSITY);
+    
     float real_g = (float) (J)/(360*Determinant);
     calculatePI(matrixPI,m,e);
     calculateOmega(Omega);
-    productRealMatrix(real_g,productMatrixMatrix(matrixPI,productMatrixMatrix(Alpha,Omega,3,3,4),12,3,4),matrixG);
+    productRealMatrix(real_g,productMatrixMatrix(matrixPI,productMatrixMatrix(Alpha,Omega,3,3,4),12,3,4),matrixL);
 
-    //Matrix D
-    Matrix g_matrix_t,Omega_t;
+    //Matrix R
+    Matrix Omega_t;
     float real_d = (float)(J/(720*Determinant));
 
     calculateTrara(matrixTrara,m,e);
     transpose(Omega, Omega_t);
-    transpose(g_matrix,g_matrix_t);
-    productRealMatrix(real_d,productMatrixMatrix(Omega_t,productMatrixMatrix(Alpha_t,matrixTrara,3,3,12),4,3,12),matrixD);
+    productRealMatrix(real_d,productMatrixMatrix(Omega_t,productMatrixMatrix(Alpha_t,matrixTrara,3,3,12),4,3,12),matrixR);
 
 
     //Matrix M
     Matrix M;
     zeroes(M,16);
-    ubicarSubMatriz(M,0,11,0,11, sumMatrix(matrixA,matrixK,12,12));
-    ubicarSubMatriz(M,0,11,12,15,matrixG);
-    ubicarSubMatriz(M,12,15,0,11,matrixD);
+    ubicarSubMatriz(M,0,11,0,11, sumMatrix(matrixT,matrixP,12,12));
+    ubicarSubMatriz(M,0,11,12,15,matrixL);
+    ubicarSubMatriz(M,12,15,0,11,matrixR);
 
     return M;
 }
@@ -400,14 +395,38 @@ void calculateF(Vector &f, mesh &m){
 
 }
 
+void calculateAtilde(Matrix &C, mesh m, int i){
+    element e = m.getElement(i);
+    node n1 = m.getNode(e.getNode1()-1);
+    node n2 = m.getNode(e.getNode2()-1);
+    node n3 = m.getNode(e.getNode3()-1);
+    node n4 = m.getNode(e.getNode4()-1);
+
+    float z1, z2, z3, z4;
+    z1 = n1.getZ();
+    z2 = n2.getZ();
+    z3 = n3.getZ();
+    z4 = n4.getZ();
+
+    zeroes(C,4,1);
+
+    C.at(0).at(0) = pow(3*z1,2)+2*z1*(z2+z3+z4)+ pow(z2,2)+z2*(z3+z4)+pow(z3,2)+z3*z4+pow(z4,2);
+    C.at(1).at(0) = pow(z1,2)+z1*(2*z2+z3+z4)+3*pow(z2,2)+2*z2*(z3+z4)+pow(z3,2)+z3*z4+pow(z4,2);
+    C.at(2).at(0) =  pow(z1,2)+z1*(z2+2*z3+z4)+pow(z2,2)+z2*(2*z3+z4)+pow(3*z3,2)+2*z3*z4+pow(z4,2);
+    C.at(3).at(0) =  pow(z1,2)+z1*(z2+z3+2*z4)+pow(z2,2)+z2*(z3+2*z4)+pow(z3,2)+2*z3*z4+pow(3*z4,2);
+
+}
+
+
 Vector createLocalb(int e,mesh &m){
     float J;
     Vector b,b_aux,f;
-    Matrix g_matrix;
+    Matrix g_matrix, matrixTtilt, respuesta;
 
     calculateF(f, m);
-
+    calculateAtilde(matrixTtilt,m,e);
     calculateGamma(g_matrix);
+
 
     J = calculateLocalJ(e,m);
 
@@ -419,6 +438,13 @@ Vector createLocalb(int e,mesh &m){
     zeroes(b_aux,16);
     productMatrixVector(g_matrix,f,b_aux);
     productRealVector(J/24,b_aux,b);
+    float real = (36*J/360);
+    productRealMatrix(real, matrixTtilt,respuesta);
+    b.at(12) = real;
+    b.at(13) = real;
+    b.at(14) = real;
+    b.at(15) = real;
+    
     
     return b;
 }

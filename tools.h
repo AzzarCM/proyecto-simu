@@ -73,18 +73,18 @@ void fusionDirichlet(int n1,condition* list1,int n2,condition* list2,int n3,cond
 void leerMallaYCondiciones(mesh &m,char *filename){
     char inputfilename[150];
     ifstream file;
-    float u_bar,nu,rho,f_x,f_y,f_z;
+    float f_x,f_y,f_z;
     int nnodes, neltos, ndirich_u, ndirich_v, ndirich_w, ndirich_p;
     condition *dirichlet_u, *dirichlet_v, *dirichlet_w, *dirichlet_p;
 
     addExtension(inputfilename,filename,".dat");
     file.open(inputfilename);
 
-    file >> u_bar >> nu >> rho >> f_x >> f_y >> f_z;
+    file >> f_x >> f_y >> f_z;
     
     file >> nnodes >> neltos >> ndirich_u >> ndirich_v >> ndirich_w >> ndirich_p;
 
-    m.setParameters(u_bar,nu,rho,f_x,f_y,f_z);
+    m.setParameters(f_x,f_y,f_z);
     m.setSizes(nnodes,neltos,ndirich_u+ndirich_v+ndirich_w+ndirich_p);
     m.createData();
 
@@ -159,19 +159,30 @@ void writeResults(mesh m,Vector T,char *filename){
 
     for(int i=0;i<nn;i++){
         int d_index = getIndex(i+1,nd,dirich_indices);
-        if(d_index != -1)
+        if(d_index != -1){
             file << i+1 << " " << dirich[d_index].getValue() << " ";
+            }
         else{
             int T_index = getIndex(i+1,4*nn-nd,non_dirich_indices);
             file << i+1 << " " << T.at(T_index) << " ";
+            
         }
         d_index = getIndex(i+1+nn,nd,dirich_indices);
-        if(d_index != -1)
+        if(d_index != -1){
             file << dirich[d_index].getValue() << "\n";
+        }       
         else{
             int T_index = getIndex(i+1+nn,4*nn-nd,non_dirich_indices);
             file << T.at(T_index) << "\n";
         }
+        /*
+        d_index = getIndex(i+1+nd, nd,dirich_indices);
+        if(d_index != -1){
+            file << i+1 << " " << dirich[d_index].getValue() << "\n";
+        }else{
+            int T_index = getIndex(i+1+nd, 4*nn-nd,non_dirich_indices);
+            file << T.at(T_index) << "\n";
+        }*/
     }
 
     file << "End values\n";
