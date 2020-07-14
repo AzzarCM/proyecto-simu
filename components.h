@@ -440,6 +440,8 @@ Vector createLocalb(int e,mesh &m){
     productRealVector(J/24,b_aux,b);
     float real = (36*J/360);
     productRealMatrix(real, matrixTtilt,respuesta);
+
+    
     b.at(12) = real;
     b.at(13) = real;
     b.at(14) = real;

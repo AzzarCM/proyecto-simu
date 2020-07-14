@@ -1,6 +1,7 @@
 #include <fstream>
 #include "string.h"
-
+#include <random>
+#include <cstdlib>
 void obtenerDatos(istream &file,int nlines,int n,int mode,item* item_list){
     string line;
     file >> line;
@@ -169,20 +170,26 @@ void writeResults(mesh m,Vector T,char *filename){
         }
         d_index = getIndex(i+1+nn,nd,dirich_indices);
         if(d_index != -1){
-            file << dirich[d_index].getValue() << "\n";
+            file << dirich[d_index].getValue() << " ";
         }       
         else{
             int T_index = getIndex(i+1+nn,4*nn-nd,non_dirich_indices);
+            file << T.at(T_index) << " ";
+        }/*
+        if(d_index != -1){
+            file << rand() % 1000000 + 1 <<"\n";
+        }else{
+            file << rand() % 1000000 + 1 <<"\n";
+        }*/
+        
+       d_index = getIndex(i+2+nn,nd,dirich_indices);
+        if(d_index != -1)
+            file << dirich[d_index].getValue() << "\n";
+        else{
+            int T_index = getIndex(i+2+nn,4*nn-nd,non_dirich_indices);
             file << T.at(T_index) << "\n";
         }
-        /*
-        d_index = getIndex(i+1+nd, nd,dirich_indices);
-        if(d_index != -1){
-            file << i+1 << " " << dirich[d_index].getValue() << "\n";
-        }else{
-            int T_index = getIndex(i+1+nd, 4*nn-nd,non_dirich_indices);
-            file << T.at(T_index) << "\n";
-        }*/
+
     }
 
     file << "End values\n";
